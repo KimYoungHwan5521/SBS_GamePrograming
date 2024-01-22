@@ -22,5 +22,53 @@ namespace CS
             else if (value > 0) return 1;
             else return 0;
         }
+
+        //    생명력    추가 공격력(%)
+        // fromA   fromB   toA  toB
+        // (1500 ~ 500) ->  (0.1 ~ 0.9)
+        // ex)  1250    ->  약 0.25
+        //      1000    ->   0.5
+        public static float GetPercent(this float value, float fromA, float fromB, float toA, float toB)
+        {
+            // 빼고 나눔
+            float fromPercent = (fromB - value) / (fromB - fromA);
+            // 0 ~ 1 범위로 만든 것을 0.1 ~ 0.9로
+            // 빼고 나눔 -> 곱하고 더함
+            float result = fromPercent * (toB - toA) + toA;
+
+            return result;
+        }
+
+        // 열거형은 기본적으로 정수로 0부터 저장됨
+        // 강제로 수를 바꿔 줄수 있음
+        public enum TextStyle
+        {
+            Defalut = 0,
+            Bold = 1, 
+            UnderLine = 4, 
+            StrikeThrough = 9,
+        }
+
+        public enum TextColor
+        {
+            Black = 30,
+            Red = 31,
+            Green = 32,
+            Yellow = 33,
+            Blue = 34,
+            Magenta = 35,
+            Cyan = 36,
+            White = 37,
+            Default = 39,
+
+        }
+
+        public static string Color(this string target, TextColor textColor = TextColor.Default, TextStyle textStyle = TextStyle.Bold, TextColor backgroundColor = TextColor.Default)
+        {
+            // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
+            // 빨강 + 밑줄
+            return $"\x1b[{(int)textColor};{(int)backgroundColor + 10};{(int)textStyle}m" + target + "\x1b[0m";
+        }
     }
 }

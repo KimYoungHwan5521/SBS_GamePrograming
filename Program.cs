@@ -9,6 +9,7 @@ namespace CS
         static void Main(string[] args)
         {
             InfinityDungeon game = new InfinityDungeon();
+            game.MainScreen();
             game.Prologue();
 
         }
