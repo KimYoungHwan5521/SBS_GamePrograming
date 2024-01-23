@@ -70,5 +70,9 @@ namespace CS
             // 빨강 + 밑줄
             return $"\x1b[{(int)textColor};{(int)backgroundColor + 10};{(int)textStyle}m" + target + "\x1b[0m";
         }
+
+        public static string SelectedColor(this string target) => target.Color(TextColor.Black, TextStyle.Bold, TextColor.White);
+        public static string GreenColor(this string target) => target.Color(TextColor.Green);
+        public static string RedColor(this string target) => target.Color(TextColor.Red);
     }
 }

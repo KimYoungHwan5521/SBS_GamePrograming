@@ -10,7 +10,6 @@ namespace CS
         {
             InfinityDungeon game = new InfinityDungeon();
             game.MainScreen();
-            game.Prologue();
 
         }
 
