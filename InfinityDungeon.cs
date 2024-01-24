@@ -29,7 +29,13 @@ namespace CS
                 MainScreen();
                 return;
             }
-
+            player.gold += 100;
+            new Store(
+                "어서오세요",
+                "안녕히가세요",
+                new GoodsInfo { item = ItemBase.SmallPotion, price = 50, quantity = 100 },
+                new GoodsInfo { item = ItemBase.knife, price = 100, quantity = 1 }
+                ).Enter(player);
         }
 
         public void Prologue()
@@ -137,7 +143,7 @@ namespace CS
 
         public void OptionScreen(int bar = 0)
         {
-            int page = Select("환경 설정", new string[] { "게임플레이", "\x1b[90m조작\x1b[0m", "\x1b[90m사운드\x1b[0m", "\x1b[90m그래픽\x1b[0m", "\x1b[90m언어\x1b[0m", "뒤로" }, bar);
+            int page = Select("환경 설정", new string[] { "게임플레이", "조작".DarkColor(), "사운드".DarkColor(), "그래픽".DarkColor(), "언어".DarkColor(), "뒤로" }, bar);
             switch(page)
             {
                 case 0: OptionGamePlayScreen(); break;
@@ -170,7 +176,7 @@ namespace CS
             {
                 Console.Clear();
                 Console.WriteLine("==============================================");
-                Console.Write("              ");
+                Console.Write("    ");
                 Console.WriteLine(question);
                 Console.WriteLine("==============================================");
                 for(int i=0; i < choices.Length; i++)

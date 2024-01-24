@@ -9,6 +9,9 @@ namespace CS
     internal class CharacterDungeon
     {
         public string name;
+        public Equipable[] equipables = new Equipable[6];
+        public List<ItemBase> inventory = new List<ItemBase>();
+        public int gold;
         public bool isDead = false;
         public int maxHP;
         private int _nowHP;
@@ -22,7 +25,7 @@ namespace CS
                 if(value <= 0)
                 {
                     _nowHP = 0;
-                    isDead= true;
+                    isDead = true;
                 }
                 else if(value > maxHP)
                 {

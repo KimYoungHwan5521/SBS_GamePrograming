@@ -60,6 +60,7 @@ namespace CS
             Cyan = 36,
             White = 37,
             Default = 39,
+            Dark = 90,
 
         }
 
@@ -72,7 +73,10 @@ namespace CS
         }
 
         public static string SelectedColor(this string target) => target.Color(TextColor.Black, TextStyle.Bold, TextColor.White);
+        public static string DarkColor(this string target) => target.Color(TextColor.Dark);
         public static string GreenColor(this string target) => target.Color(TextColor.Green);
         public static string RedColor(this string target) => target.Color(TextColor.Red);
+        public static string StrikeThrough(this string target) => target.Color(TextColor.Default, TextStyle.StrikeThrough);
+        public static string DarkStrikeThrough(this string target) => target.Color(TextColor.Dark, TextStyle.StrikeThrough);
     }
 }
