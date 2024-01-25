@@ -11,16 +11,119 @@ using System.Threading.Tasks;
 
 namespace CS
 {
-
     class Place
     {
+        public List<Place> connectedPlaces;
+        public string name;
+
+        public static PalletTown palletTown;
+        public static PalletMountain palletMountain;
+        public static SecondTown secondTown;
+        public static SecondMountain secondMountain;
+        public static Mokpo mokpo;
+        public static ThirdMountain thirdMountain;
+        public static PawnIsland pawnIsland;
+        public static PawnForest pawnForest;
+        public static BadcoldTown badcoldTown;
+        public static BadcoldMountain badcoldMountain;
+        public static FluTown fluTown;
+
+        public static PalletTownStore palletTownStore;
+        // 애들이 위에서 아래로 차례차례 만들어 지니까
+        // 1. 모든 애들을 다 만들어 놓고 (initialize)
+        // 2. 그 다음에 연결하기
+        public static void Initialize()
+        {
+            palletTown      = new ();
+            palletMountain  = new ();
+            secondTown      = new ();
+            secondMountain  = new ();
+            mokpo           = new ();
+            thirdMountain   = new ();
+            pawnIsland      = new ();
+            pawnForest      = new ();
+            badcoldTown     = new ();
+            badcoldMountain = new ();
+            fluTown         = new ();
+
+            palletTownStore = new ();
+
+            palletTown.Connect(palletMountain, palletTownStore);
+            palletMountain.Connect(palletTown, secondTown);
+            secondTown.Connect(palletMountain, secondMountain, thirdMountain);
+            secondMountain.Connect(secondTown, mokpo);
+            thirdMountain.Connect(secondTown);
+            mokpo.Connect(secondMountain, pawnIsland, badcoldTown);
+            pawnIsland.Connect(mokpo, pawnForest, badcoldTown);
+            pawnForest.Connect(pawnIsland);
+            badcoldTown.Connect(badcoldMountain, mokpo, pawnIsland);
+            badcoldMountain.Connect(badcoldTown, fluTown);
+            fluTown.Connect(badcoldMountain);
+
+            palletTownStore.Connect(palletTown);
+        }
+
+        public virtual void Connect(params Place[] places)
+        {
+            // 연결된 지역들에다가 더해주기
+            // Add는 하나만 넣기
+            // AddRange : 배열이나 리스트를 통으로 붙이기
+            connectedPlaces.AddRange(places);
+        }
+
+        public Place(string name, params Place[] connectedPlaces) 
+        {
+            this.name = name;
+            // 배열 -> 리스트
+            this.connectedPlaces = new List<Place>(connectedPlaces);
+            // 리스트 -> 배열
+            // connectedPlace.ToArray();
+        }
+
         public virtual void Enter(CharacterDungeon target) 
         { 
-            if (target == null) { }
+            if (target != null) { }
         }
         public virtual void Exit(CharacterDungeon target) 
         {
             if (target == null) { }
+        }
+        public virtual void Move(CharacterDungeon target)
+        {
+            string[] placeNames = new string[connectedPlaces.Count + 1];
+            placeNames[connectedPlaces.Count] = "뒤로";
+            for(int i = 0; i < connectedPlaces.Count; i++)
+            {
+                placeNames[i] = connectedPlaces[i].name;
+            }
+            
+            int selected = InfinityDungeon.Select("어디로 갈까요", placeNames);
+            if(selected == connectedPlaces.Count)
+            {
+                // 뒤로
+                Enter(target);
+            }
+            else
+            {
+                // 1. null 체크
+                // 2. 있던 곳에서 나가기
+                // 3. 고른 번호의 장소에 Enter
+                if (connectedPlaces[selected] != null)
+                {
+                    // 2. Exit
+                    Exit(target);
+                    // 3. Enter
+                    connectedPlaces[selected].Enter(target);
+
+                }
+                else
+                {
+                    // 1. null 이면 Move
+                    Console.WriteLine("<<!잘못된 장소>>".RedColor());
+                    Console.ReadKey();
+                    Move(target);
+                }
+            }
         }
     }
 
@@ -34,7 +137,8 @@ namespace CS
         //     만들 때                         실행할 때
         // Store(int[] values)         =>  new Stroe(new int[] { 1,2,3,});
         // Store(params int[] values)  =>  new Store(1,2,3);
-        public Store(string greetingMessage, string goodByeMessage, params GoodsInfo[] goods)
+        public Store(string name, string greetingMessage, string goodByeMessage, GoodsInfo[] goods, params Place[] connectedPlaces)
+            : base(name, connectedPlaces)
         {
             this.greetingMessage = greetingMessage;
             this.goodByeMessage= goodByeMessage;
@@ -107,15 +211,11 @@ namespace CS
                     Enter(target);
                     break;
                 case 2:
-                    Exit(target);
+                    Move(target);
                     break;
             }
         }
 
-        public override void Exit(CharacterDungeon target)
-        {
-            base.Exit(target);
-        }
 
         /*
         Store BeginnersShop = new Store(
@@ -283,7 +383,223 @@ namespace CS
         }
     }
 
-    internal class Shelter
+    class Town : Place
     {
+        public Town(string name, params Place[] places) : base(name, places) 
+        {
+            
+        }
+
+        public override void Enter(CharacterDungeon target)
+        {
+            Move(target); // 마을은 자유롭게 이동할 수 있는 공간
+        }
+    }
+
+    class Field : Place
+    {
+        protected CharacterDungeon enemy = null;
+        
+        public Field(string name, params Place[] connectedPlaces) : base(name, connectedPlaces)
+        {
+
+        }
+
+        public override void Enter(CharacterDungeon target)
+        {
+            base.Enter(target);
+            ChoiceAction(target);
+        }
+
+        // 아예 남들은 쓰면 안되는데, Field의 자식들은 바꾸긴 해야한다
+        //            public(x)                  private(x)
+        // => protected
+        protected string conditionExplain = "아무 일도 없었다.";
+        public virtual void ChoiceAction(CharacterDungeon player)
+        {
+            // 현재 상황에 대해 파악을 하고, 선택
+            int selected = InfinityDungeon.Select(conditionExplain, new string[] { "탐색", "이동"});
+            switch(selected)
+            {
+                case 0: Search(player); break; // 첫 번째 선택지 : 탐색
+                case 1: Move(player); break; // 두 번째 탐색지 : 이동
+            }
+        }
+
+        public virtual void Search(CharacterDungeon player)
+        {
+            ChoiceAction(player);
+        }
+
+        //                                          1. 플레이어가 강하면 강한 몬스터
+        //                                          2. 이벤트 아이템을 들고 왔으면 이벤트가 실행
+        //                                          3. 도플갱어
+        //                                          4. 몬스터 소환될 때 플레이어에게 영향
+        public virtual CharacterDungeon SpawnMonster(CharacterDungeon player)
+        {
+            return new CharacterDungeon("슬라임", 100, 0, 10, 0);
+        }
+
+        public virtual void BattleTurn(CharacterDungeon player)
+        {
+            // 상태창
+            // 행동 선택
+            int selected = InfinityDungeon.Select(
+                $"\t{player.name}\t\t{enemy.name}\n"
+                + $"체력\t{player.nowHP}/{player.maxHP}\t\t{enemy.nowHP}/{enemy.maxHP}\n"
+                + $"마나\t{player.nowMP}/{player.maxMP}\t\t{enemy.nowMP}/{enemy.maxMP}"
+                , new string[] {"공격", "스킬", "아이템", "방어", "도망"});
+            switch (selected)
+            {
+                case 0: break;
+                case 1: break;
+                case 2: break;
+                case 3: break;
+                case 4: break;
+                default:
+                    Console.WriteLine("<<!알 수 없는 행동>>".RedColor());
+                    break;
+            }
+        }
+    }
+
+    // 태초마을
+    internal class PalletTown : Town
+    {
+        bool isEventMoney = false;
+        public PalletTown(params Place[] connectedPlaces) : base("태초마을", connectedPlaces)
+        {
+
+        }
+
+        public override void Enter(CharacterDungeon target)
+        {
+            if(!isEventMoney) GiveMoney(target);
+            base.Enter(target);
+        }
+
+        public void GiveMoney(CharacterDungeon target)
+        {
+            Console.Clear();
+            InfinityDungeon.DrawText("반갑네 나는 이 마을 이장일세");
+            InfinityDungeon.DrawText("일단 100G를 받게");
+            InfinityDungeon.NextPage();
+            target.gold += 100;
+            InfinityDungeon.DrawText("100G를 얻었다!");
+            InfinityDungeon.NextPage();
+            InfinityDungeon.DrawText("상점에서 아이템을 구매해보게");
+            InfinityDungeon.NextPage();
+            isEventMoney= true;
+        }
+    }
+
+    internal class PalletTownStore : Store
+    {
+        public PalletTownStore(params Place[] connectedPlaces) 
+            : base(
+                  "태초 상점", 
+                  "ㅎㅇ", 
+                  "ㅂㅂ",
+                  new GoodsInfo[]
+                  {
+                      new GoodsInfo(){item = ItemBase.SmallPotion, price = 50, quantity = 100},
+                      new GoodsInfo(){item = ItemBase.knife, price = 10, quantity = 1},
+                  },
+                  connectedPlaces
+                  )
+        {
+
+        }
+    }
+
+    internal class PalletMountain : Field
+    {
+        public PalletMountain(params Place[] connectedPlaces) : base("태초산", connectedPlaces)
+        {
+            conditionExplain = "약한 야생 몬스터들이 서식하는 작은 산입니다.";
+        }
+
+        public override void Search(CharacterDungeon player)
+        {
+            if(new Random().NextSingle() < 0.5)
+            {
+                InfinityDungeon.DrawText("10골드를 획득했다!");
+                player.gold += 10;
+                Console.ReadKey();
+            }
+            else
+            {
+                enemy = SpawnMonster(player);
+                InfinityDungeon.DrawText($"수풀에서 {enemy.name}이(가) 튀어 나왔다!");
+                Console.ReadKey();
+                BattleTurn(player);
+            }
+
+            base.Search(player);
+        }
+    }
+
+    internal class SecondTown : Town
+    {
+        public SecondTown(params Place[] connectedPlaces) : base("세컨드 타운", connectedPlaces)
+        {
+
+        }
+    }
+    internal class SecondMountain : Field
+    {
+        public SecondMountain(params Place[] connectedPlaces) : base("세컨드 마운틴", connectedPlaces)
+        {
+
+        }
+    }
+    internal class ThirdMountain : Field
+    {
+        public ThirdMountain(params Place[] connectedPlaces) : base("써드 마운틴", connectedPlaces)
+        {
+
+        }
+    }
+    internal class Mokpo : Town
+    {
+        public Mokpo(params Place[] connectedPlaces) : base("목포", connectedPlaces)
+        {
+
+        }
+    }
+    internal class PawnIsland : Town
+    {
+        public PawnIsland(params Place[] connectedPlaces) : base("폰섬", connectedPlaces)
+        {
+
+        }
+    }
+    internal class PawnForest : Field
+    {
+        public PawnForest(params Place[] connectedPlaces) : base("폰숲", connectedPlaces)
+        {
+
+        }
+    }
+    internal class BadcoldTown : Town
+    {
+        public BadcoldTown(params Place[] connectedPlaces) : base("감기 마을", connectedPlaces)
+        {
+
+        }
+    }
+    internal class BadcoldMountain : Field
+    {
+        public BadcoldMountain(params Place[] connectedPlaces) : base("감기산", connectedPlaces)
+        {
+
+        }
+    }
+    internal class FluTown : Town
+    {
+        public FluTown(params Place[] connectedPlaces) : base("독감 마을", connectedPlaces)
+        {
+
+        }
     }
 }

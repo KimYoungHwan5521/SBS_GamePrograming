@@ -29,13 +29,12 @@ namespace CS
                 MainScreen();
                 return;
             }
-            player.gold += 100;
-            new Store(
-                "어서오세요",
-                "안녕히가세요",
-                new GoodsInfo { item = ItemBase.SmallPotion, price = 50, quantity = 100 },
-                new GoodsInfo { item = ItemBase.knife, price = 100, quantity = 1 }
-                ).Enter(player);
+            Console.Clear();
+            DrawText("LOADING...");
+            Place.Initialize();
+            
+            Place.palletTown.Enter(player);
+            
         }
 
         public void Prologue()
