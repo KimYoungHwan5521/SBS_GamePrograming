@@ -91,7 +91,7 @@ namespace CS
         public virtual void Move(CharacterDungeon target)
         {
             string[] placeNames = new string[connectedPlaces.Count + 1];
-            placeNames[connectedPlaces.Count] = "뒤로";
+            placeNames[connectedPlaces.Count] = $"뒤로({name})";
             for(int i = 0; i < connectedPlaces.Count; i++)
             {
                 placeNames[i] = connectedPlaces[i].name;
@@ -377,8 +377,8 @@ namespace CS
         {
             // strunct는 무조건 있는거 , class는 없을 수도 있음
             if(target == null) return false;
-            if (target.nowHP >= target.maxHP || target.isDead) return false;
-            target.nowHP += value;
+            if (target.NowHP >= target.maxHP || target.isDead) return false;
+            target.NowHP += value;
             return true;
         }
     }
@@ -437,28 +437,89 @@ namespace CS
         //                                          4. 몬스터 소환될 때 플레이어에게 영향
         public virtual CharacterDungeon SpawnMonster(CharacterDungeon player)
         {
-            return new CharacterDungeon("슬라임", 100, 0, 10, 0);
+            Random ran = new Random();
+            float value = ran.NextSingle();
+            if(value > 0.7f)
+            {
+                return new CharacterDungeon("슬라임", 150, 0, 10, 0);
+            }
+            else
+            {
+                return new CharacterDungeon("스켈톤", 200, 0, 30, 10);
+            }
         }
 
         public virtual void BattleTurn(CharacterDungeon player)
         {
-            // 상태창
-            // 행동 선택
-            int selected = InfinityDungeon.Select(
-                $"\t{player.name}\t\t{enemy.name}\n"
-                + $"체력\t{player.nowHP}/{player.maxHP}\t\t{enemy.nowHP}/{enemy.maxHP}\n"
-                + $"마나\t{player.nowMP}/{player.maxMP}\t\t{enemy.nowMP}/{enemy.maxMP}"
-                , new string[] {"공격", "스킬", "아이템", "방어", "도망"});
-            switch (selected)
+            // select는 무한반복 : 플레이어는 맘대로 눌러버릴 거니까
+            while(true)
             {
-                case 0: break;
-                case 1: break;
-                case 2: break;
-                case 3: break;
-                case 4: break;
-                default:
-                    Console.WriteLine("<<!알 수 없는 행동>>".RedColor());
+                // 상태창
+                // 행동 선택
+                int selected = InfinityDungeon.Select
+                (
+                    $"\t{player.name}\t\t{enemy.name}\n"
+                    + $"체력\t{player.NowHP}/{player.maxHP}\t\t{enemy.NowHP}/{enemy.maxHP}\n"
+                    + $"마나\t{player.NowMP}/{player.maxMP}\t\t{enemy.NowMP}/{enemy.maxMP}"
+                    , new string[] {"공격", "스킬", "아이템", "방어", "도망"}
+                );
+                
+                if(selected == 0)
+                {
+                    // 공격
+                    player.Attack(enemy);
                     break;
+                }
+                else if(selected == 1 && player.Skill(enemy))
+                {
+                    // 스킬
+                    break;
+                }
+                else if(selected == 2)
+                {
+                    // 아이템
+                    // 턴제 게임에서 아이템 사용에 대한 이야기
+                    // "턴"을 소모할 것인가 말 것인가.
+                    // 턴을 쓴다. : break;
+                    // 보조 턴을 쓴다.
+                    // -> 턴을 안쓴다.
+                    player.UseItem(player.SelectItem(), player, enemy);
+                }
+                else if(selected == 3)
+                {
+                    // 방어
+                    player.Defense(enemy);
+                    break;
+                }
+                else if(selected == 4)
+                {
+                    // 도망
+                    return;
+                }
+            }
+
+            // 둘 다 안죽었으면 
+            if (!player.isDead && !enemy.isDead)
+            {
+                enemy.isDefense= false;
+                enemy.AI(player);
+            }
+
+            InfinityDungeon.NextPage();
+            // 적 턴 후에도 모두 안죽었으면
+            if (!player.isDead && !enemy.isDead)
+            {
+                player.isDefense = false;
+                BattleTurn(player);
+            }
+            else if(enemy.isDead) // 몬스터가 죽었으면
+            {
+                InfinityDungeon.DrawText($"{enemy.name}을(를) 쓰러트렸다!");
+            }
+            else
+            {
+                InfinityDungeon.DrawText($"{player.name}은(는) 쓰러졌다!");
+                Program.game.GameOver(player);
             }
         }
     }
@@ -503,7 +564,7 @@ namespace CS
                   new GoodsInfo[]
                   {
                       new GoodsInfo(){item = ItemBase.SmallPotion, price = 50, quantity = 100},
-                      new GoodsInfo(){item = ItemBase.knife, price = 10, quantity = 1},
+                      new GoodsInfo(){item = ItemBase.knife, price = 100, quantity = 1},
                   },
                   connectedPlaces
                   )

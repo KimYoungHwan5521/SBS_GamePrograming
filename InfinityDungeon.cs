@@ -20,6 +20,20 @@ namespace CS
         // 적 한며 명
         CharacterDungeon enemy;
 
+        public void GameOver(CharacterDungeon player)
+        {
+            Console.WriteLine("---------------------------------");
+            Console.WriteLine("       G A M E     O V E R       ");
+            Console.WriteLine("---------------------------------");
+            foreach(ItemBase cur in player.inventory)
+            {
+                Console.Write($"{cur}, ");
+                Thread.Sleep(500);
+            }
+            NextPage();
+            MainScreen();
+        }
+
         // 게임 시작
         public void GameStart(CharacterDungeon whoPlayer)
         {

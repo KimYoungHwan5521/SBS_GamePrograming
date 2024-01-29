@@ -5,10 +5,15 @@ namespace CS
 {
     internal class Program
     {
-
+        // 그냥 변수를 만들면
+        // 각자 하나씩 들고 있는 것!
+        // 하나만 존재하게 하려면 static
+        // 이렇게 인스턴스를 관리하는 변수 딱 하나를 두고, 여러개를 안 만들고 싶어요
+        // => "싱글턴"
+        public static InfinityDungeon game;
         static void Main(string[] args)
         {
-            InfinityDungeon game = new InfinityDungeon();
+            game = new InfinityDungeon();
             game.MainScreen();
 
         }
